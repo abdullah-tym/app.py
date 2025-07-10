@@ -31,8 +31,8 @@ def make_kpi_html(value, label, color):
 def fig_to_base64(fig):
     return base64.b64encode(pio.to_image(fig, format="png", width=600, height=400)).decode()
 
-path_wkhtmltopdf = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
-config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
+# path_wkhtmltopdf = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
+# config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
 
 uploaded_file = st.file_uploader("⬆️ Upload your Excel file", type=["xlsx"])
 if uploaded_file:
@@ -123,29 +123,29 @@ if uploaded_file:
         for j, fig in enumerate(charts[i:i+3]):
             with cols[j]: st.plotly_chart(fig, use_container_width=True)
 
-    if st.button("📄 Export Dashboard to PDF"):
-        try:
-            kpi_html = (
-                make_kpi_html(f"${total_invoiced:,.2f}", "Total Invoiced", COLORS["primary"]) +
-                make_kpi_html(f"${total_paid:,.2f}", "Total Paid", COLORS["secondary"]) +
-                make_kpi_html(f"${total_outstanding:,.2f}", "Outstanding", COLORS["crimson"]) +
-                make_kpi_html(str(overdue_count), "Overdue Invoices", COLORS["accent"])
-            )
-            chart_html = ""
-            for i, fig in enumerate(charts):
-                style = "width:31%;margin:1%;" if i % 3 != 2 else "width:31%;margin:1%;clear:right;"
-                chart_html += f'<img src="data:image/png;base64,{fig_to_base64(fig)}" style="{style}" />'
-            html = f"""<html><head><meta charset="utf-8">
-            <style>body{{font-family:Arial;padding:30px;background:#f7f9fc;}}
-            h1{{text-align:center;color:{COLORS["primary"]};}}.kpis{{text-align:center;margin-bottom:20px;}}
-            .charts{{text-align:center;}}</style></head><body>
-            <h1>Accountant Dashboard Report</h1>
-            <div class="kpis">{kpi_html}</div>
-            <div class="charts">{chart_html}</div>
-            </body></html>"""
-            pdf = pdfkit.from_string(html, False, configuration=config, options={"orientation": "Landscape"})
-            st.download_button("📥 Download PDF Report", data=pdf, file_name="accountant_dashboard.pdf", mime="application/pdf")
-        except Exception as e:
-            st.error(f"PDF export failed: {e}")
+    # if st.button("📄 Export Dashboard to PDF"):
+    #     try:
+    #         kpi_html = (
+    #             make_kpi_html(f"${total_invoiced:,.2f}", "Total Invoiced", COLORS["primary"]) +
+    #             make_kpi_html(f"${total_paid:,.2f}", "Total Paid", COLORS["secondary"]) +
+    #             make_kpi_html(f"${total_outstanding:,.2f}", "Outstanding", COLORS["crimson"]) +
+    #             make_kpi_html(str(overdue_count), "Overdue Invoices", COLORS["accent"])
+    #         )
+    #         chart_html = ""
+    #         for i, fig in enumerate(charts):
+    #             style = "width:31%;margin:1%;" if i % 3 != 2 else "width:31%;margin:1%;clear:right;"
+    #             chart_html += f'<img src="data:image/png;base64,{fig_to_base64(fig)}" style="{style}" />'
+    #         html = f"""<html><head><meta charset="utf-8">
+    #         <style>body{{font-family:Arial;padding:30px;background:#f7f9fc;}}
+    #         h1{{text-align:center;color:{COLORS["primary"]};}}.kpis{{text-align:center;margin-bottom:20px;}}
+    #         .charts{{text-align:center;}}</style></head><body>
+    #         <h1>Accountant Dashboard Report</h1>
+    #         <div class="kpis">{kpi_html}</div>
+    #         <div class="charts">{chart_html}</div>
+    #         </body></html>"""
+    #         pdf = pdfkit.from_string(html, False, configuration=config, options={"orientation": "Landscape"})
+    #         st.download_button("📥 Download PDF Report", data=pdf, file_name="accountant_dashboard.pdf", mime="application/pdf")
+    #     except Exception as e:
+    #         st.error(f"PDF export failed: {e}")
 else:
     st.info("Please upload your Excel file to view the dashboard.")
