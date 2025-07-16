@@ -3,10 +3,6 @@ import pandas as pd
 import plotly.express as px
 from datetime import datetime
 import io # Import io for handling file-like objects
-# Removed: from fpdf2 import FPDF
-# Removed: import os
-# Removed: import arabic_reshaper
-# Removed: from bidi.algorithm import get_display
 
 # === Setup ===
 st.set_page_config(page_title="لوحة تحكم الفواتير", layout="wide", page_icon="📊")
@@ -282,30 +278,27 @@ client_options = get_unique_sorted('client')
 payment_status_options = get_unique_sorted('payment_status')
 payment_method_options = get_unique_sorted('payment_method')
 
-def safe_default_filter(defaults, options):
-    # Keep only defaults that exist in options
-    return list(set(defaults).intersection(set(options)))
-
+# --- MODIFIED SECTION ---
+# No need for safe_default_filter here, as session state is already initialized
+# and the widget will read from st.session_state[key] automatically.
 client_filter = st.sidebar.multiselect(
     "اسم العميل",
     client_options,
-    default=safe_default_filter(st.session_state.client_filter, client_options),
-    key="client_filter"
+    key="client_filter" # Streamlit will use st.session_state.client_filter
 )
 
 payment_status_filter = st.sidebar.multiselect(
     "حالة الدفع",
     payment_status_options,
-    default=safe_default_filter(st.session_state.payment_status_filter, payment_status_options),
-    key="payment_status_filter"
+    key="payment_status_filter" # Streamlit will use st.session_state.payment_status_filter
 )
 
 payment_method_filter = st.sidebar.multiselect(
     "طريقة الدفع",
     payment_method_options,
-    default=safe_default_filter(st.session_state.payment_method_filter, payment_method_options),
-    key="payment_method_filter"
+    key="payment_method_filter" # Streamlit will use st.session_state.payment_method_filter
 )
+# --- END MODIFIED SECTION ---
 
 # Date filters
 issue_date_col = detected_cols.get('issue_date')
@@ -513,6 +506,8 @@ else:
         else:
             st.info("البيانات غير كافية لإنشاء مخطط مبلغ الفاتورة حسب العميل.")
 
+# ... (previous code) ...
+
     # Chart 2: Payment Status Distribution (Pie Chart)
     with chart_row1_col2:
         # Centered subheader
@@ -528,10 +523,24 @@ else:
                           hole=0.3,
                           color_discrete_sequence=px.colors.sequential.RdBu,
                           template="plotly_white")
-            fig2.update_layout(title_x=0.5) # Center Plotly chart title
+            fig2.update_layout(
+                title_x=0.5, # Center Plotly chart title
+                # --- START OF FIX ---
+                # Position the legend at the bottom center
+                legend=dict(
+                    orientation="h", # Horizontal orientation
+                    yanchor="bottom", # Anchor legend to the bottom of the chart
+                    y=-0.2, # Adjust this value to control space below the chart
+                    xanchor="center", # Center horizontally
+                    x=0.5 # Center horizontally
+                )
+                # --- END OF FIX ---
+            )
             st.plotly_chart(fig2, use_container_width=True)
         else:
             st.info("البيانات غير كافية لإنشاء مخطط توزيع حالة الدفع.")
+
+# ... (rest of the code) ...
 
     # Chart 3: Invoice Amount over Time (Monthly Line Chart)
     with chart_row1_col3:
@@ -575,6 +584,8 @@ else:
         else:
             st.info("البيانات غير كافية لإنشاء مخطط المبلغ المستحق حسب العميل.")
 
+# ... (previous code) ...
+
     # Chart 5: Payment Method Distribution (Pie Chart)
     with chart_row2_col2:
         # Centered subheader
@@ -590,10 +601,24 @@ else:
                           hole=0.3,
                           color_discrete_sequence=px.colors.sequential.Aggrnyl,
                           template="plotly_white")
-            fig5.update_layout(title_x=0.5) # Center Plotly chart title
+            fig5.update_layout(
+                title_x=0.5, # Center Plotly chart title
+                # --- START OF FIX ---
+                # Position the legend at the bottom center
+                legend=dict(
+                    orientation="h", # Horizontal orientation
+                    yanchor="bottom", # Anchor legend to the bottom of the chart
+                    y=-0.2, # Adjust this value to control space below the chart
+                    xanchor="center", # Center horizontally
+                    x=0.5 # Center horizontally
+                )
+                # --- END OF FIX ---
+            )
             st.plotly_chart(fig5, use_container_width=True)
         else:
             st.info("البيانات غير كافية لإنشاء مخطط توزيع طريقة الدفع.")
+
+# ... (rest of the code) ...
 
     # Chart 6: Days Overdue Distribution (Histogram for overdue invoices only)
     with chart_row2_col3:
@@ -610,11 +635,11 @@ else:
             ].copy()
             if not overdue_invoices_df.empty:
                 fig6 = px.histogram(overdue_invoices_df, x=c('delay_days'),
-                                    title='توزيع أيام التأخير للفواتير المتأخرة',
-                                    labels={c('delay_days'): 'عدد أيام التأخير'},
-                                    nbins=15,
-                                    color_discrete_sequence=['#FF6347'],
-                                    template="plotly_white")
+                                     title='توزيع أيام التأخير للفواتير المتأخرة',
+                                     labels={c('delay_days'): 'عدد أيام التأخير'},
+                                     nbins=15,
+                                     color_discrete_sequence=['#FF6347'],
+                                     template="plotly_white")
                 fig6.update_layout(title_x=0.5) # Center Plotly chart title
                 st.plotly_chart(fig6, use_container_width=True)
             else:
@@ -687,5 +712,7 @@ else:
             st.plotly_chart(fig9, use_container_width=True)
         else:
             st.info("ال بيانات غير كافية لإنشاء مخطط المبالغ المتبقية حسب طريقة الدفع.")
+
+st.markdown("---") # Horizontal line for visual separation
 
 st.markdown("<div style='text-align: center;'>Mojaz.App تم إنشاء هذه اللوحة التفاعلية عبر منصة تطبيق موجز لذكاء الاعمال</div>", unsafe_allow_html=True)
