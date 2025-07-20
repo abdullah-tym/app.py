@@ -7,3 +7,4 @@ pdfkit  # you can remove this if PDF export is disabled
 arabic_reshaper
 python-bidi
 matplotlib
+google-generativeai
