@@ -8,3 +8,5 @@ arabic_reshaper
 python-bidi
 matplotlib
 google-generativeai
+
+tabulate
