@@ -84,8 +84,6 @@ with col_main: # All your main application content goes inside this 'with' block
 
     with tab1:
         st.subheader("📄 مولد العقود القانونية")
-        # --- Insert full MojazContracts code here ---
-
 
         def reshape(text):
             return get_display(arabic_reshaper.reshape(text))
@@ -155,6 +153,7 @@ with col_main: # All your main application content goes inside this 'with' block
 
             st.subheader("✍️ التوقيع")
             st.markdown('<div class="signature-container">', unsafe_allow_html=True)
+            # KEY FIX: Make the key unique based on contract_type
             canvas_result = st_canvas(
                 fill_color="#000000",
                 stroke_width=2,
@@ -162,7 +161,7 @@ with col_main: # All your main application content goes inside this 'with' block
                 background_color="#ffffff",
                 height=150,
                 drawing_mode="freedraw",
-                key="canvas",
+                key=f"canvas_{contract_type}", # Dynamic key based on contract_type
             )
             st.markdown('</div>', unsafe_allow_html=True)
 
@@ -252,18 +251,6 @@ with col_main: # All your main application content goes inside this 'with' block
 
     with tab2:
         st.subheader("⚖️ نظام إدارة القضايا والعملاء")
-        # Removed the redundant imports inside tab2 as they are already at the top of the file.
-        # import streamlit as st
-        # from datetime import datetime, timedelta
-        # import pandas as pd
-        # import arabic_reshaper
-        # from bidi.algorithm import get_display
-        # from fpdf import FPDF
-        # from io import BytesIO
-        # from PIL import Image
-        # import tempfile
-
-        # --- Custom CSS for nicer fonts and spacing ---
         st.markdown(
             """
             <style>
