@@ -86,7 +86,6 @@ with col_main: # All your main application content goes inside this 'with' block
         st.subheader("📄 مولد العقود القانونية")
         # --- Insert full MojazContracts code here ---
 
-        st.title("📝 مولد العقود القانونية - MojazContracts")
 
         def reshape(text):
             return get_display(arabic_reshaper.reshape(text))
@@ -253,15 +252,16 @@ with col_main: # All your main application content goes inside this 'with' block
 
     with tab2:
         st.subheader("⚖️ نظام إدارة القضايا والعملاء")
-        import streamlit as st
-        from datetime import datetime, timedelta
-        import pandas as pd
-        import arabic_reshaper
-        from bidi.algorithm import get_display
-        from fpdf import FPDF
-        from io import BytesIO
-        from PIL import Image
-        import tempfile
+        # Removed the redundant imports inside tab2 as they are already at the top of the file.
+        # import streamlit as st
+        # from datetime import datetime, timedelta
+        # import pandas as pd
+        # import arabic_reshaper
+        # from bidi.algorithm import get_display
+        # from fpdf import FPDF
+        # from io import BytesIO
+        # from PIL import Image
+        # import tempfile
 
         # --- Custom CSS for nicer fonts and spacing ---
         st.markdown(
@@ -323,8 +323,6 @@ with col_main: # All your main application content goes inside this 'with' block
             unsafe_allow_html=True,
         )
 
-        st.set_page_config(page_title="MojazLegal CRM", layout="wide")
-        st.title("🧑‍⚖️ MojazLegal CRM - نظام إدارة المكاتب القانونية")
 
         def reshape(text):
             return get_display(arabic_reshaper.reshape(text))
@@ -341,28 +339,11 @@ with col_main: # All your main application content goes inside this 'with' block
                 return 1
             return df[col].max() + 1
 
-        # Sidebar with icons (emoji for simplicity)
-        menu = st.sidebar.radio("القائمة", [
-            "👥 العملاء",
-            "⚖️ القضايا",
-            "⏰ التذكيرات",
-            "📄 العقود",
-            "💰 الفواتير"
-        ])
+        # Replace sidebar radio with tabs
+        clients_tab, cases_tab, reminders_tab, contracts_tab, invoices_tab = st.tabs(["👥 العملاء", "⚖️ القضايا", "⏰ التذكيرات", "📄 العقود", "💰 الفواتير"])
 
-        # Map sidebar choices back to keys without emojis
-        menu_map = {
-            "👥 العملاء": "clients",
-            "⚖️ القضايا": "cases",
-            "⏰ التذكيرات": "reminders",
-            "📄 العقود": "contracts",
-            "💰 الفواتير": "invoices"
-        }
 
-        page = menu_map[menu]
-
-        # ------- CLIENTS PAGE -------
-        if page == "clients":
+        with clients_tab:
             st.header("👥 إدارة العملاء")
             with st.form("add_client"):
                 col1, col2 = st.columns([2,1])
@@ -381,8 +362,7 @@ with col_main: # All your main application content goes inside this 'with' block
             st.markdown('<div class="kpi-box">عدد العملاء الحاليين: <strong>{}</strong></div>'.format(len(st.session_state.clients)), unsafe_allow_html=True)
             st.dataframe(st.session_state.clients.set_index("client_id"))
 
-        # ------- CASES PAGE -------
-        elif page == "cases":
+        with cases_tab:
             st.header("⚖️ إدارة القضايا")
             if st.session_state.clients.empty:
                 st.warning("يرجى إضافة عملاء أولا في صفحة العملاء")
@@ -412,8 +392,7 @@ with col_main: # All your main application content goes inside this 'with' block
                 df_display = df[["case_id", "case_name", "case_type", "status", "court_date", "العميل"]].set_index("case_id")
                 st.dataframe(df_display)
 
-        # ------- REMINDERS PAGE -------
-        elif page == "reminders":
+        with reminders_tab:
             st.header("⏰ التذكيرات")
             if st.session_state.cases.empty:
                 st.warning("لا توجد قضايا مضافة لعرض التذكيرات.")
@@ -432,8 +411,7 @@ with col_main: # All your main application content goes inside this 'with' block
 
                 st.info("⚠️ إرسال التذكيرات عبر البريد الإلكتروني أو الرسائل النصية غير مفعّل في هذه النسخة التجريبية.")
 
-        # ------- CONTRACTS PAGE -------
-        elif page == "contracts":
+        with contracts_tab:
             st.header("📄 مولد العقود")
             if st.session_state.clients.empty:
                 st.warning("يرجى إضافة عملاء أولا في صفحة العملاء")
@@ -442,7 +420,7 @@ with col_main: # All your main application content goes inside this 'with' block
                 client_id = st.session_state.clients[st.session_state.clients["name"] == client_select]["client_id"].values[0]
 
                 st.markdown("### توليد عقد عمل")
-                with st.form("contract_form"):
+                with st.form("contract_form_crm"): # Renamed form key to avoid conflict
                     col1, col2 = st.columns(2)
                     with col1:
                         job_title = st.text_input("المسمى الوظيفي")
@@ -454,13 +432,13 @@ with col_main: # All your main application content goes inside this 'with' block
 
                 if submitted:
                     text = f"""\
-        عقد عمل
-        تم بتاريخ {datetime.today().strftime("%Y-%m-%d")} بين:
-        الطرف الأول: المكتب القانوني
-        الطرف الثاني: {client_select}
+عقد عمل
+تم بتاريخ {datetime.today().strftime("%Y-%m-%d")} بين:
+الطرف الأول: المكتب القانوني
+الطرف الثاني: {client_select}
 
-        بموجب هذا العقد، يعمل الطرف الثاني بوظيفة {job_title} براتب شهري قدره {salary} ريال لمدة {duration} شهراً تبدأ من {start_date.strftime("%Y-%m-%d")}.
-        """
+بموجب هذا العقد، يعمل الطرف الثاني بوظيفة {job_title} براتب شهري قدره {salary} ريال لمدة {duration} شهراً تبدأ من {start_date.strftime("%Y-%m-%d")}.
+"""
                     reshaped = reshape(text)
                     pdf = FPDF()
                     pdf.add_page()
@@ -471,8 +449,7 @@ with col_main: # All your main application content goes inside this 'with' block
                     pdf_bytes = pdf.output(dest="S").encode("latin-1")
                     st.download_button("تحميل العقد PDF", data=pdf_bytes, file_name=f"contract_{client_select}.pdf", mime="application/pdf")
 
-        # ------- INVOICES PAGE -------
-        elif page == "invoices":
+        with invoices_tab:
             st.header("💰 إدارة الفواتير")
             if st.session_state.clients.empty or st.session_state.cases.empty:
                 st.warning("يرجى إضافة عملاء وقضايا أولاً")
