@@ -1,4 +1,4 @@
-  import streamlit as st
+import streamlit as st
 from fpdf import FPDF
 import arabic_reshaper
 from bidi.algorithm import get_display
