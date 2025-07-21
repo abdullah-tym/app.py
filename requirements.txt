@@ -12,3 +12,9 @@ google-generativeai
 tabulate
 
 fpdf 
+streamlit_drawable_canvas 
+tempfile
+PIL
+io
+datetime
+bidi.algorithm
