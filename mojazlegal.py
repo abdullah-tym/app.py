@@ -253,6 +253,16 @@ with col_main: # All your main application content goes inside this 'with' block
 
     with tab2:
         st.subheader("⚖️ نظام إدارة القضايا والعملاء")
+        import streamlit as st
+        from datetime import datetime, timedelta
+        import pandas as pd
+        import arabic_reshaper
+        from bidi.algorithm import get_display
+        from fpdf import FPDF
+        from io import BytesIO
+        from PIL import Image
+        import tempfile
+
         # --- Custom CSS for nicer fonts and spacing ---
         st.markdown(
             """
@@ -313,6 +323,8 @@ with col_main: # All your main application content goes inside this 'with' block
             unsafe_allow_html=True,
         )
 
+        st.set_page_config(page_title="MojazLegal CRM", layout="wide")
+        st.title("🧑‍⚖️ MojazLegal CRM - نظام إدارة المكاتب القانونية")
 
         def reshape(text):
             return get_display(arabic_reshaper.reshape(text))
@@ -329,86 +341,162 @@ with col_main: # All your main application content goes inside this 'with' block
                 return 1
             return df[col].max() + 1
 
-        show_menu = st.checkbox("إظهار القائمة الجانبية")
+        # Sidebar with icons (emoji for simplicity)
+        menu = st.sidebar.radio("القائمة", [
+            "👥 العملاء",
+            "⚖️ القضايا",
+            "⏰ التذكيرات",
+            "📄 العقود",
+            "💰 الفواتير"
+        ])
 
-        if show_menu:
-            menu = st.sidebar.radio("القائمة", [
-                "👥 العملاء",
-                "⚖️ القضايا",
-                "⏰ التذكيرات",
-                "📄 العقود",
-                "💰 الفواتير"
-            ])
-        else:
-            menu = None
+        # Map sidebar choices back to keys without emojis
+        menu_map = {
+            "👥 العملاء": "clients",
+            "⚖️ القضايا": "cases",
+            "⏰ التذكيرات": "reminders",
+            "📄 العقود": "contracts",
+            "💰 الفواتير": "invoices"
+        }
 
-        if menu is None:
-            st.info("يرجى تفعيل القائمة الجانبية لاختيار صفحة.")
-        else:
-            # Map sidebar choices back to keys without emojis
-            menu_map = {
-                "👥 العملاء": "clients",
-                "⚖️ القضايا": "cases",
-                "⏰ التذكيرات": "reminders",
-                "📄 العقود": "contracts",
-                "💰 الفواتير": "invoices"
-            }
-            page = menu_map[menu]
+        page = menu_map[menu]
 
-            # ------- CLIENTS PAGE -------
-            if page == "clients":
-                st.header("👥 إدارة العملاء")
-                with st.form("add_client"):
-                    col1, col2 = st.columns([2,1])
-                    with col1:
-                        client_name = st.text_input("اسم العميل")
-                        client_notes = st.text_area("ملاحظات")
-                    with col2:
-                        client_phone = st.text_input("رقم الهاتف")
-                        client_email = st.text_input("البريد الإلكتروني")
-                    submitted = st.form_submit_button("حفظ العميل")
-                    if submitted:
-                        cid = next_id(st.session_state.clients, "client_id")
-                        st.session_state.clients.loc[len(st.session_state.clients)] = [cid, client_name, client_phone, client_email, client_notes]
-                        st.success(f"تم إضافة العميل {client_name}")
+        # ------- CLIENTS PAGE -------
+        if page == "clients":
+            st.header("👥 إدارة العملاء")
+            with st.form("add_client"):
+                col1, col2 = st.columns([2,1])
+                with col1:
+                    client_name = st.text_input("اسم العميل")
+                    client_notes = st.text_area("ملاحظات")
+                with col2:
+                    client_phone = st.text_input("رقم الهاتف")
+                    client_email = st.text_input("البريد الإلكتروني")
+                submitted = st.form_submit_button("حفظ العميل")
+                if submitted:
+                    cid = next_id(st.session_state.clients, "client_id")
+                    st.session_state.clients.loc[len(st.session_state.clients)] = [cid, client_name, client_phone, client_email, client_notes]
+                    st.success(f"تم إضافة العميل: {client_name}")
 
-                st.subheader("قائمة العملاء")
-                st.dataframe(st.session_state.clients)
+            st.markdown('<div class="kpi-box">عدد العملاء الحاليين: <strong>{}</strong></div>'.format(len(st.session_state.clients)), unsafe_allow_html=True)
+            st.dataframe(st.session_state.clients.set_index("client_id"))
 
-            # ------- CASES PAGE -------
-            elif page == "cases":
-                st.header("⚖️ إدارة القضايا")
+        # ------- CASES PAGE -------
+        elif page == "cases":
+            st.header("⚖️ إدارة القضايا")
+            if st.session_state.clients.empty:
+                st.warning("يرجى إضافة عملاء أولا في صفحة العملاء")
+            else:
                 with st.form("add_case"):
-                    client_list = st.session_state.clients["client_id"].astype(str) + " - " + st.session_state.clients["name"]
-                    client_choice = st.selectbox("اختر العميل", client_list)
-                    client_id = int(client_choice.split(" - ")[0]) if client_choice else None
-                    case_name = st.text_input("اسم القضية")
-                    case_type = st.selectbox("نوع القضية", ["جنائي", "مدني", "تجاري", "إداري"])
-                    status = st.selectbox("الحالة", ["جديدة", "مستمرة", "مغلقة"])
-                    court_date = st.date_input("تاريخ الجلسة")
-                    case_notes = st.text_area("ملاحظات")
+                    client_select = st.selectbox("اختر العميل", st.session_state.clients["name"])
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        case_name = st.text_input("اسم القضية")
+                        case_type = st.selectbox("نوع القضية", ["مدني", "جنائي", "تجاري", "إداري", "أخرى"])
+                    with col2:
+                        status = st.selectbox("الحالة", ["نشطة", "مغلقة", "معلقة"])
+                        court_date = st.date_input("تاريخ الجلسة القادمة", datetime.today() + timedelta(days=7))
+                    notes = st.text_area("ملاحظات")
                     submitted = st.form_submit_button("حفظ القضية")
-                    if submitted and client_id is not None:
-                        cid = next_id(st.session_state.cases, "case_id")
-                        st.session_state.cases.loc[len(st.session_state.cases)] = [cid, client_id, case_name, case_type, status, court_date.strftime("%Y-%m-%d"), case_notes]
-                        st.success(f"تم إضافة القضية {case_name}")
+                    if submitted:
+                        case_id = next_id(st.session_state.cases, "case_id")
+                        client_id = st.session_state.clients[st.session_state.clients["name"] == client_select]["client_id"].values[0]
+                        st.session_state.cases.loc[len(st.session_state.cases)] = [case_id, client_id, case_name, case_type, status, court_date.strftime("%Y-%m-%d"), notes]
+                        st.success(f"تم إضافة القضية: {case_name}")
 
-                st.subheader("قائمة القضايا")
-                merged_cases = st.session_state.cases.merge(st.session_state.clients[["client_id", "name"]], on="client_id", how="left")
-                merged_cases = merged_cases.rename(columns={"name": "اسم العميل"})
-                st.dataframe(merged_cases)
+                st.markdown('<div class="kpi-box">عدد القضايا الحالية: <strong>{}</strong></div>'.format(len(st.session_state.cases)), unsafe_allow_html=True)
 
-            # ------- REMINDERS PAGE -------
-            elif page == "reminders":
-                st.header("⏰ التذكيرات")
-                st.info("الميزة قيد التطوير...")
+                df = st.session_state.cases.copy()
+                df = df.merge(st.session_state.clients[["client_id", "name"]], on="client_id", how="left")
+                df = df.rename(columns={"name": "العميل"})
+                df_display = df[["case_id", "case_name", "case_type", "status", "court_date", "العميل"]].set_index("case_id")
+                st.dataframe(df_display)
 
-            # ------- CONTRACTS PAGE -------
-            elif page == "contracts":
-                st.header("📄 العقود")
-                st.info("لإنشاء العقود، انتقل إلى تبويب 'MojazContracts' في الأعلى.")
+        # ------- REMINDERS PAGE -------
+        elif page == "reminders":
+            st.header("⏰ التذكيرات")
+            if st.session_state.cases.empty:
+                st.warning("لا توجد قضايا مضافة لعرض التذكيرات.")
+            else:
+                today = datetime.today()
+                upcoming = st.session_state.cases[pd.to_datetime(st.session_state.cases["court_date"]) >= today]
+                upcoming = upcoming.sort_values(by="court_date")
+                upcoming = upcoming.merge(st.session_state.clients[["client_id", "name"]], on="client_id", how="left")
+                upcoming["court_date"] = pd.to_datetime(upcoming["court_date"]).dt.strftime("%Y-%m-%d")
+                if upcoming.empty:
+                    st.info("لا توجد جلسات قادمة.")
+                else:
+                    st.subheader("جلسات قريبة")
+                    for _, row in upcoming.iterrows():
+                        st.markdown(f"**{row['case_name']}** مع العميل {row['name']} بتاريخ {row['court_date']}")
 
-            # ------- INVOICES PAGE -------
-            elif page == "invoices":
-                st.header("💰 الفواتير")
-                st.info("الميزة قيد التطوير...")
+                st.info("⚠️ إرسال التذكيرات عبر البريد الإلكتروني أو الرسائل النصية غير مفعّل في هذه النسخة التجريبية.")
+
+        # ------- CONTRACTS PAGE -------
+        elif page == "contracts":
+            st.header("📄 مولد العقود")
+            if st.session_state.clients.empty:
+                st.warning("يرجى إضافة عملاء أولا في صفحة العملاء")
+            else:
+                client_select = st.selectbox("اختر العميل", st.session_state.clients["name"])
+                client_id = st.session_state.clients[st.session_state.clients["name"] == client_select]["client_id"].values[0]
+
+                st.markdown("### توليد عقد عمل")
+                with st.form("contract_form"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        job_title = st.text_input("المسمى الوظيفي")
+                        salary = st.number_input("الراتب الشهري (ريال)", 0.0)
+                    with col2:
+                        duration = st.number_input("مدة العقد (شهور)", 1)
+                        start_date = st.date_input("تاريخ بدء العمل", datetime.today())
+                    submitted = st.form_submit_button("توليد العقد")
+
+                if submitted:
+                    text = f"""\
+        عقد عمل
+        تم بتاريخ {datetime.today().strftime("%Y-%m-%d")} بين:
+        الطرف الأول: المكتب القانوني
+        الطرف الثاني: {client_select}
+
+        بموجب هذا العقد، يعمل الطرف الثاني بوظيفة {job_title} براتب شهري قدره {salary} ريال لمدة {duration} شهراً تبدأ من {start_date.strftime("%Y-%m-%d")}.
+        """
+                    reshaped = reshape(text)
+                    pdf = FPDF()
+                    pdf.add_page()
+                    pdf.add_font("Arabic", "", "Amiri-Regular.ttf", uni=True)
+                    pdf.set_font("Arabic", size=14)
+                    for line in reshaped.split("\n"):
+                        pdf.cell(200, 10, txt=line.strip(), ln=True, align="R")
+                    pdf_bytes = pdf.output(dest="S").encode("latin-1")
+                    st.download_button("تحميل العقد PDF", data=pdf_bytes, file_name=f"contract_{client_select}.pdf", mime="application/pdf")
+
+        # ------- INVOICES PAGE -------
+        elif page == "invoices":
+            st.header("💰 إدارة الفواتير")
+            if st.session_state.clients.empty or st.session_state.cases.empty:
+                st.warning("يرجى إضافة عملاء وقضايا أولاً")
+            else:
+                with st.form("add_invoice"):
+                    client_select = st.selectbox("اختر العميل", st.session_state.clients["name"])
+                    client_id = st.session_state.clients[st.session_state.clients["name"] == client_select]["client_id"].values[0]
+                    cases_for_client = st.session_state.cases[st.session_state.cases["client_id"] == client_id]
+                    if cases_for_client.empty:
+                        st.warning("لا توجد قضايا لهذا العميل")
+                    else:
+                        case_select = st.selectbox("اختر القضية", cases_for_client["case_name"])
+                        case_id = cases_for_client[cases_for_client["case_name"] == case_select]["case_id"].values[0]
+                        amount = st.number_input("المبلغ (ريال)", 0.0)
+                        paid = st.checkbox("تم الدفع؟")
+                        date = st.date_input("تاريخ الفاتورة", datetime.today())
+                        submitted = st.form_submit_button("حفظ الفاتورة")
+                        if submitted:
+                            invoice_id = next_id(st.session_state.invoices, "invoice_id")
+                            st.session_state.invoices.loc[len(st.session_state.invoices)] = [invoice_id, client_id, case_id, amount, paid, date.strftime("%Y-%m-%d")]
+                            st.success("تم إضافة الفاتورة")
+
+                df_inv = st.session_state.invoices.copy()
+                df_inv = df_inv.merge(st.session_state.clients[["client_id", "name"]], on="client_id", how="left")
+                df_inv = df_inv.merge(st.session_state.cases[["case_id", "case_name"]], on="case_id", how="left")
+                df_inv = df_inv.rename(columns={"name": "العميل", "case_name": "القضية"})
+                st.dataframe(df_inv.set_index("invoice_id"))
