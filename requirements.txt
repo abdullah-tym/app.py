@@ -2,19 +2,13 @@ streamlit
 pandas
 plotly
 openpyxl
-pdfkit  # you can remove this if PDF export is disabled
+fpdf
+pdfkit  # optional; keep if you generate PDFs using wkhtmltopdf
 
 arabic_reshaper
 python-bidi
 matplotlib
 google-generativeai
-
 tabulate
-
-fpdf 
-streamlit_drawable_canvas 
-tempfile
-PIL
-io
-datetime
-bidi.algorithm
+streamlit-drawable-canvas
+Pillow  # ✅ correct name for PIL
