@@ -78,7 +78,7 @@ input[type="text"], input[type="number"], textarea, select {
 col_left, col_main, col_right = st.columns([1, 32, 1]) # Adjust ratios as needed for more/less empty space
 
 with col_main: # All your main application content goes inside this 'with' block
-    st.title("🧑‍⚖️ Mojaz Platform - العقود و CRM القانوني")
+    st.title("🧑‍⚖️ Mojaz Platform - 🧑‍⚖️ منصة موجاز - لإدارة العقود وعمليات المحاماة")
 
     tab1, tab2 = st.tabs(["📄 MojazContracts", "⚖️ MojazLegalCRM"])
 
